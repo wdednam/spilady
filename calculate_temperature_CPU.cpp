@@ -72,12 +72,15 @@ void calculate_temperature_CPU(){
               atom_ptr->Heff_H = atom_ptr->Hext;
               #else
               atom_ptr->Heff_H = vec_zero();
+              atom_ptr->s_cross_Heff = vec_zero();
+              atom_ptr->Ts_dn = 0e0;
               #endif
 
-              inner_spin(atom_ptr);
-              
-              cell_ptr->sum_R_up += vec_sq(vec_cross(atom_ptr->s, atom_ptr->Heff_H));
-              cell_ptr->sum_R_dn += vec_dot(atom_ptr->s,atom_ptr->Heff_H);
+              inner_spin_temp_up(atom_ptr);
+              //vector omega_new = vec_add(atom_ptr->Heff_H,vec_times(-hbar,rotation_axis(atom_ptr)));              
+              cell_ptr->sum_R_up += vec_sq(atom_ptr->s_cross_Heff);
+              inner_spin_temp_dn(atom_ptr);
+              cell_ptr->sum_R_dn += atom_ptr->Ts_dn;
             #endif
             
             #if defined SDHL || defined SLDHL
@@ -106,7 +109,7 @@ void calculate_temperature_CPU(){
               atom_ptr->Heff_HC = vec_times(-atom_ptr->sum_Jij_sj/atom_ptr->s0, atom_ptr->s);
               atom_ptr->Heff_L = vec_add(atom_ptr->Heff_L, atom_ptr->Heff_HC);
               #endif
-
+            
               cell_ptr->sum_L_up += vec_sq(vec_add(atom_ptr->Heff_H, atom_ptr->Heff_L));
               cell_ptr->sum_L_dn += 6e0*A + 20e0*B*s_sq + 42e0*C*pow(s_sq,2) + 72e0*D*pow(s_sq,3);
 
@@ -131,7 +134,7 @@ void calculate_temperature_CPU(){
             #endif
         #endif
         #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
-        cell_ptr->Ts_R = cell_ptr->sum_R_up/cell_ptr->sum_R_dn/2e0/boltz;
+        cell_ptr->Ts_R = cell_ptr->sum_R_up/cell_ptr->sum_R_dn/boltz;
         #endif
 
         #if defined SDH || defined SLDH

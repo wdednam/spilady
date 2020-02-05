@@ -34,8 +34,10 @@ int main(){
 
     time_t timer = time(NULL);
     cout << "SPILADY starts!!!" << '\n';
-
-    initialize();
+    
+    int n_cycle = -1;
+    
+    initialize(n_cycle);
     check(-1);
     write(-1);
 
@@ -44,10 +46,12 @@ int main(){
     for (int current_step = 0 ; current_step < no_of_production_steps ; ++current_step){
     #else
     int current_step = 0;
-    while (total_time <= total_production_time + 1e-18 ){
+    while (total_time <= total_production_time + 1e-15 ){
     #endif
 
-        core(current_step);
+        core(current_step,n_cycle);
+        
+        if (n_cycle == 5) return(0);
 
         total_time += step; //finished 1 step, so add time first. For print out having correct time.
         cout << current_step << " total time = " <<  total_time << " dt = " << step << '\n';

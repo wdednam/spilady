@@ -31,7 +31,7 @@
 ********************************************************************************/
 
 //initial.cpp
-void initialize();
+void initialize(int &n_cycle);
 
 //read_variables.cpp
 void read_variables();
@@ -49,6 +49,10 @@ double dpair(double rij);
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
 double Jij(double rij);
 double dJij(double rij);
+double phi_ij(double rij);
+double dphi_ij(double rij);
+double ddphi_ij(double rij);
+double dddphi_ij(double rij);
 #endif
 #if defined SDHL || defined SLDHL
 double LandauA(double rho);
@@ -87,6 +91,11 @@ void bcc100bulk();
 void bcc111bulk();
 #endif
 
+//bcc111_z.cpp
+#ifdef bcc111_z
+void bccz111bulk();
+#endif
+
 //fcc100.cpp
 #ifdef fcc100
 void fcc100bulk();
@@ -97,7 +106,7 @@ void fcc100bulk();
 void hcp0001bulk();
 #endif
 
-#if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+#if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
 void initial_element();
 #endif
 
@@ -128,7 +137,7 @@ void links();
 void allocate_cells();
 void free_allocate_memory();
 
-//caculated_rho_CPU.cpp
+//calculate_rho_CPU.cpp
 #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
 void embedded_rho(atom_struct *atom_ptr);
 void calculate_rho();
@@ -165,6 +174,9 @@ void check_energy(int current_step);
 
 //check_temperature_CPU.cpp
 void check_temperature(int current_step);
+void inner_spin_up(atom_struct *atom_ptr);
+void inner_spin_dn(atom_struct *atom_ptr);
+
 
 #ifdef eltemp
 //heatcapacity.cpp
@@ -198,7 +210,7 @@ void write_vsim(int current_step);
 #endif
 
 //core.cpp
-void core(int current_step);
+void core(int current_step, int &n_cycle);
 
 //external_field_CPU.cpp
 #ifdef extfield
@@ -210,6 +222,16 @@ void external_field(int current_step);
 void external_force(int current_step);
 #endif
 
+//external_velocity_CPU.cpp
+#ifdef extvelocity
+void external_velocity(int current_step);
+#endif
+
+//external_brat_CPU.cpp
+#ifdef extbrat
+void external_brat(int current_step, int &n_cycle);
+#endif
+
 //core_dTe_CPU.cpp
 #ifdef eltemp
 void core_dTe(double dt);
@@ -217,11 +239,11 @@ void core_dTe(double dt);
 
 //core_ds_CPU.cpp
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL || defined SLDNC
-vector spin_rotation(vector Heff, vector s, double dt);
 void core_ds(double dt);
 
 //calculate_spin_CPU.cpp
 void calculate_spin(atom_struct *atom_ptr, double dt);
+vector spin_rotation(vector Heff, vector s, double dt);
 void inner_spin(atom_struct *atom_ptr);
 #endif
 

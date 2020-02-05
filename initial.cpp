@@ -28,7 +28,7 @@
 
 #include "spilady.h"
 
-void initialize(){
+void initialize(int &n_cycle){
 
     cout << "Initializing!!!" << '\n';
 
@@ -43,7 +43,7 @@ void initialize(){
 
     build_lattice(); //build the lattice from scratch or read-in file
 
-    #if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+    #if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
     initial_element();
     #endif
 
@@ -61,6 +61,12 @@ void initialize(){
     #ifdef extforce
     external_force(-1);
     #endif
+    #ifdef extvelocity
+    external_velocity(-1);
+    #endif
+    #ifdef extbrat
+    external_brat(-1,n_cycle);
+    #endif    
 
     map_cells();           //create the link-cell system and map neighbourhood
 

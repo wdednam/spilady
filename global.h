@@ -66,8 +66,10 @@ EXTERN vector Hext;
 EXTERN int ninput INIT(1000000);                  // the number of discrete input points in the potential table
 EXTERN double finput INIT(ninput);
 EXTERN double rmax INIT(rcut_max);                 // the max of rij in potential table
+EXTERN double rmax_aniso INIT(rcut_phi);
 EXTERN double rhomax INIT(1000e0);                    // the max of rho in potential table
 EXTERN double finput_over_rmax;
+EXTERN double finput_over_rmax_aniso;
 EXTERN double finput_over_rhomax;
 #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
 EXTERN double *bf_ptr;         // the first pointer of input big_f
@@ -80,6 +82,10 @@ EXTERN double *dpr_ptr;        // the first pointer of input 1st derivative of p
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
 EXTERN double *Jij_ptr;        //the first pointer to pointer of input Jij
 EXTERN double *dJij_ptr;       //the first pointer to pointer of input 1st derivative of Jij
+EXTERN double *phi_ij_ptr; //the first pointer to pointer of input phi_ij
+EXTERN double *dphi_ij_ptr; //the first pointer to pointer of input 1st derivative of phi_ij
+EXTERN double *ddphi_ij_ptr; //the first pointer to pointer of input 2nd derivative of phi_ij
+EXTERN double *dddphi_ij_ptr; //the first pointer to pointer of input 2nd derivative of phi_ij
 #endif
 #if defined SDHL || defined SLDHL
 EXTERN double *LandauA_ptr;
@@ -175,6 +181,10 @@ EXTERN double *dpr_ptr_d; // the first pointer of input 1st derivative of pair p
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
 EXTERN double *Jij_ptr_d; //the first pointer of input Jij
 EXTERN double *dJij_ptr_d; //the first pointer of input 1st derivative of Jij
+EXTERN double *phi_ij_ptr; //the first pointer to pointer of input phi_ij
+EXTERN double *dphi_ij_ptr; //the first pointer to pointer of input 1st derivative of phi_ij
+EXTERN double *ddphi_ij_ptr; //the first pointer to pointer of input 2nd derivative of phi_ij
+EXTERN double *dddphi_ij_ptr; //the first pointer to pointer of input 2nd derivative of phi_ij
 #endif
 #if defined SDHL || defined SLDHL
 EXTERN double *LandauA_ptr_d;

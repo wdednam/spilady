@@ -49,6 +49,8 @@ void initial_spin(){
             atom_ptr->m = vec_init(0e0, 0e0, -atom_ptr->m0);
               
             atom_ptr->s = vec_divide(atom_ptr->m,-el_g);
+            atom_ptr->s_curr = atom_ptr->s;
+            atom_ptr->s_next = atom_ptr->s;
             atom_ptr->s0 = vec_length(atom_ptr->s);
         }
     }
@@ -67,11 +69,54 @@ void initial_spin(){
             }
 
             atom_ptr->s = vec_divide(atom_ptr->m,-el_g);
+            atom_ptr->s_curr = atom_ptr->s;
+            atom_ptr->s_next = atom_ptr->s;
             atom_ptr->s0 = vec_length(atom_ptr->s);
         }
 
     }
+    
+        if (ncase == 3){
+    //horizontal domain wall in the middle of the structure
+        for (int i = 0 ; i < natom ; ++i){
+            struct atom_struct *atom_ptr;
+            atom_ptr = first_atom_ptr + i ;
+    
+            atom_ptr->m0 = mag_mom;
+            if (atom_ptr->r.z > box_length_half.z){ 
+                atom_ptr->m = vec_init(0e0, 0e0, -atom_ptr->m0);
+            } else {
+                atom_ptr->m = vec_init(0e0, 0e0,  atom_ptr->m0);
+            }
+    
+            atom_ptr->s = vec_divide(atom_ptr->m,-el_g);
+            atom_ptr->s_curr = atom_ptr->s;
+            atom_ptr->s_next = atom_ptr->s;
+            atom_ptr->s0 = vec_length(atom_ptr->s);
+        }
+    
+    }
 
+        if (ncase == 4){
+    //horizontal domain wall near the top of the structure (a third of its length from the top)
+        for (int i = 0 ; i < natom ; ++i){
+            struct atom_struct *atom_ptr;
+            atom_ptr = first_atom_ptr + i ;
+    
+            atom_ptr->m0 = mag_mom;
+            if (atom_ptr->r.z > (2e0/3e0)*box_length_half.z){ 
+                atom_ptr->m = vec_init(0e0, 0e0, -atom_ptr->m0);
+            } else {
+                atom_ptr->m = vec_init(0e0, 0e0,  atom_ptr->m0);
+            }
+    
+            atom_ptr->s = vec_divide(atom_ptr->m,-el_g);
+            atom_ptr->s_curr = atom_ptr->s;
+            atom_ptr->s_next = atom_ptr->s;
+            atom_ptr->s0 = vec_length(atom_ptr->s);
+        }
+    
+    }
 }
 #endif
 #endif

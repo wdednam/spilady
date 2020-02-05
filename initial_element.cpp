@@ -28,7 +28,7 @@
 
 #include "spilady.h"
 
-#if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+#if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
 
 void initial_element(){
 

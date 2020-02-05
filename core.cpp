@@ -28,7 +28,7 @@
 
 #include "spilady.h"
 
-void core(int current_step){
+void core(int current_step, int& n_cycle){
 
 
     #ifdef extfield
@@ -37,6 +37,12 @@ void core(int current_step){
     #ifdef extforce
     external_force(current_step);
     #endif
+    #ifdef extvelocity
+    external_velocity(current_step);
+    #endif
+    #ifdef extbrat
+    external_brat(current_step,n_cycle);
+    #endif    
   
     #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
     links();
@@ -47,7 +53,7 @@ void core(int current_step){
     #endif
 
     #if defined  SDH || defined SDHL
-    core_ds(step);
+    core_ds(step,current_step);
     if ((current_step + 1)%interval_of_print_out == 0) calculate_force_energy();
     #endif
     
@@ -60,7 +66,7 @@ void core(int current_step){
     #endif
     
     #if defined SLDH || defined SLDHL || defined SLDNC
-    core_dp(step/2e0);
+    core_dp(step/2e0);   
     core_ds(step/2e0);
     core_dr(step);
     calculate_rho();

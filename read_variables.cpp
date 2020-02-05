@@ -142,6 +142,12 @@ void read_variables(){
             unit_cell_edge_y = a_lattice*sqrt(6e0); //y dimension of a single cell
             unit_cell_edge_z = a_lattice*sqrt(2e0); //z dimension of a single cell
             #endif
+
+            #ifdef bcc111_z
+            unit_cell_edge_x = a_lattice*sqrt(6e0); //x dimension of a single cell
+            unit_cell_edge_y = a_lattice*sqrt(2e0); //y dimension of a single cell
+            unit_cell_edge_z = a_lattice*sqrt(3e0); //z dimension of a single cell
+            #endif                        
             
             #ifdef hcp0001
             unit_cell_edge_x = a_lattice; //x dimension of a single cell
@@ -160,7 +166,7 @@ void read_variables(){
         if (strcmp(variable, "no_of_unit_cell_y")      == 0) no_of_unit_cell_y = atoi(value);
         if (strcmp(variable, "no_of_unit_cell_z")      == 0) no_of_unit_cell_z = atoi(value);
 
-        #if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+        #if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
         if (strcmp(variable, "element")                == 0) strcpy(element,value);
         #endif
 
@@ -222,6 +228,10 @@ void read_variables(){
         #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
         if (strcmp(variable, "rcut_mag")               == 0) rcut_mag = atof(value);
         #endif
+        
+        #if defined SDH || defined SDHL || defined SLDH || defined SLDHL            
+        if (strcmp(variable, "rcut_phi")               == 0) rcut_phi = atof(value);
+        #endif                                                                      
 
         if (strcmp(variable, "rcut_max")               == 0)  rcut_max = atof(value);
        
@@ -272,6 +282,10 @@ void read_variables(){
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
     rcut_mag_sq = pow(rcut_mag,2);
     #endif
+    
+    #if defined SLDH || defined SLDHL
+    rcut_phi_sq = pow(rcut_phi,2);                                  
+    #endif                                                          
 
     rcut_max_sq = pow(rcut_max,2);
 
@@ -324,7 +338,7 @@ void read_variables(){
     outfile << "kappa_e " << kappa_e << '\n';
     #endif
 
-    #if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+    #if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
       outfile << "element " << element << '\n';
       outfile << "a_lattice " << a_lattice << '\n';
       #ifdef hcp0001
@@ -392,7 +406,11 @@ void read_variables(){
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
     outfile << "rcut_mag " << rcut_mag << '\n';
     #endif
-
+    
+    #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
+    outfile << "rcut_phi " << rcut_phi << '\n';                     
+    #endif                                                         
+     
     outfile << "rcut_max " << rcut_max << '\n';
 
     outfile << "min_length_link_cell " << min_length_link_cell << '\n';

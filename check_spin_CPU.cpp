@@ -37,7 +37,7 @@ void check_spin_CPU(int current_step){
     double ave_sy = 0e0;
     double ave_sz = 0e0;
     ave_m = vec_zero();
-
+    
     #pragma omp parallel for reduction(+:ave_sx, ave_sy, ave_sz)
     for (int i = 0; i < natom; ++i){
         struct atom_struct *atom_ptr;
@@ -56,6 +56,22 @@ void check_spin_CPU(int current_step){
 
     ave_m = vec_times(-el_g, ave_s);
     double ave_m0 = vec_length(ave_m);
+
+//     for (int i = 0; i < natom; ++i){
+//             struct atom_struct *atom_ptr;
+//             atom_ptr = first_atom_ptr + i;
+//             atom_ptr->Heff_H = vec_zero();
+//             if (current_step == -1) {
+// 	            atom_ptr->s_curr = atom_ptr->s;
+// 	            atom_ptr->s_next = atom_ptr->s;
+//         	}
+//     		inner_spin(atom_ptr);
+//    		vector omega_new = vec_add(atom_ptr->Heff_H,vec_times(-0.5e0,rotation_axis(atom_ptr)));
+//     		double omega_dot_spin_diff = vec_dot(atom_ptr->Heff_H,vec_sub(atom_ptr->s_next,atom_ptr->s_curr));        
+//     		//cout << "The local magnetic energy difference of atom " << i << '\n' << "is : " << '\n' << omega_dot_spin_diff << '\n'; 
+//     }    
+    
+    
 
     char out_spn_front[] = "spn-";
     char out_spn[256];

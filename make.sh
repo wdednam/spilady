@@ -1,9 +1,11 @@
 # delete unused files
-rm spilady
+#rm spilady
 #rm spilady.exe
 
 # gcc compiler
-#g++ -fopenmp -o spilady -DCPU -DOMP -DSLDHL *.cpp
+#g++ -fopenmp -o spilady -DCPU -DOMP -DSLDH *.cpp
+
+#pgcpp -g -O3 -fast -mp -o spilady -DCPU -DOMP -DMD *.cpp
 
 # -DMD -DSDH #-DSDHL #-DSLDH #-DSLDHL #-DSLDNC
 
@@ -11,7 +13,7 @@ rm spilady
 #module load icc
 #module load ifort
 #module load openmpi-intel
-icc -O3 -ipo -o spilady -DCPU -DOMP -DSLDHL *.cpp -qopenmp
+icc -O3 -ipo -o spilady -DCPU -DOMP -DSLDH *.cpp -qopenmp
 
 # nvcc compiler, using nvidia GPU
 #module load cuda/5.5

@@ -39,6 +39,8 @@
 #include "spilady.h"
 
 double first_derivative(double (*function)(double x), double x);
+//double second_derivative(double (*function)(double x), double x);
+//double third_derivative(double (*function)(double x), double x);
 double interpolation(double x, double input_over_max, double* x_ptr);
 
 #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
@@ -49,6 +51,10 @@ double pair_gen(double r);
 
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
 double Jij_gen(double r);
+double phi_ij_gen(double r);
+double dphi_ij_gen(double r);
+double ddphi_ij_gen(double r);
+double dddphi_ij_gen(double r);
 #endif
 
 #if defined SDHL || defined SLDHL
@@ -88,6 +94,10 @@ void potential_table(){
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
     Jij_ptr  = (double*)malloc(size_input);
     dJij_ptr = (double*)malloc(size_input);
+    phi_ij_ptr  = (double*)malloc(size_input);
+    dphi_ij_ptr = (double*)malloc(size_input);
+    ddphi_ij_ptr = (double*)malloc(size_input);    
+    dddphi_ij_ptr = (double*)malloc(size_input);    
     #endif
 
     #if defined SDHL || defined SLDHL
@@ -126,6 +136,16 @@ void potential_table(){
            *(Jij_ptr + n) *= pow(el_g,2);
            *(dJij_ptr + n) *= pow(el_g,2);
          #endif
+         *(phi_ij_ptr + n)  = phi_ij_gen(rij);
+         *(dphi_ij_ptr + n) =   dphi_ij_gen(rij);   //first_derivative(&phi_ij_gen,rij);  //dphi_ij_gen(rij);
+         *(ddphi_ij_ptr + n) =  ddphi_ij_gen(rij);  //second_derivative(&phi_ij_gen,rij); //ddphi_ij_gen(rij);
+         *(dddphi_ij_ptr + n) = dddphi_ij_gen(rij); //third_derivative(&phi_ij_gen,rij);  //dddphi_ij_gen(rij);
+         #ifdef magmom
+           *(phi_ij_ptr + n) *= pow(el_g,2);
+           *(dphi_ij_ptr + n) *= pow(el_g,2);
+           *(ddphi_ij_ptr + n) *= pow(el_g,2);
+           *(dddphi_ij_ptr + n) *= pow(el_g,2);
+         #endif         
       #endif
     
       #if defined SDHL || defined SLDHL
@@ -168,6 +188,46 @@ double first_derivative(double (*function)(double x), double x){
     double value_3m = (*function)(x - 3*dx);
     return (45e0*(value_p - value_m) - 9e0*(value_2p - value_2m) + (value_3p - value_3m))/(60e0*dx); 
 }
+
+//double second_derivative(double (*function)(double x), double x){
+//
+//    //accuracy up to numerical exact.
+//    double dx = x/933e0;
+//    double value_z  = (*function)(x);
+//    double value_p  = (*function)(x + dx);
+//    double value_m  = (*function)(x - dx);
+//    double value_2p = (*function)(x + 2*dx);
+//    double value_2m = (*function)(x - 2*dx);
+//    double value_3p = (*function)(x + 3*dx);
+//    double value_3m = (*function)(x - 3*dx);
+//    return (-245e0*value_z + 135e0*(value_p + value_m) - 13.5e0*(value_2p + value_2m) + (value_3p + value_3m))/(90e0*pow(dx,2)); 
+//}
+//
+//double third_derivative(double (*function)(double x), double x){
+//
+//    //accuracy up to numerical exact.
+//    double dx = x/933e0;
+//    double value_p  = (*function)(x + dx);
+//    double value_m  = (*function)(x - dx);
+//    double value_2p = (*function)(x + 2*dx);
+//    double value_2m = (*function)(x - 2*dx);
+//    double value_3p = (*function)(x + 3*dx);
+//    double value_3m = (*function)(x - 3*dx);
+//    double value_4p = (*function)(x + 4*dx);
+//    double value_4m = (*function)(x - 4*dx);
+//    return (-488e0*(value_p - value_m) + 338e0*(value_2p - value_2m) - 72e0*(value_3p - value_3m) + 7*(value_4p - value_4m))/(240e0*pow(dx,3)); 
+//}
+
+// double third_derivative(double (*function)(double x), double x){
+// 
+//     //accuracy up to numerical exact.
+//     double dx = x/423e0;
+//     double value_p  = (*function)(x + dx);
+//     double value_m  = (*function)(x - dx);
+//     double value_2p = (*function)(x + 2*dx);
+//     double value_2m = (*function)(x - 2*dx);
+//     return (-1e0*(value_p - value_m) + 2e0*(value_2p - value_2m))/(2e0*pow(dx,3)); 
+// }
 
 double interpolation(double x, double input_over_max, double* x_ptr){
 
@@ -222,6 +282,27 @@ double dJij(double rij){
       
     return interpolation(rij, finput_over_rmax, dJij_ptr);
 }
+
+double phi_ij(double rij){
+      
+    return interpolation(rij, finput_over_rmax, phi_ij_ptr);
+}
+
+double dphi_ij(double rij){
+      
+    return interpolation(rij, finput_over_rmax, dphi_ij_ptr);
+}
+
+double ddphi_ij(double rij){
+      
+    return interpolation(rij, finput_over_rmax, ddphi_ij_ptr);
+}
+
+double dddphi_ij(double rij){
+      
+    return interpolation(rij, finput_over_rmax, dddphi_ij_ptr);
+}
+
 #endif
 
 #if defined SDHL || defined SLDHL
@@ -282,6 +363,10 @@ void free_potential_ptr(){
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
     free(Jij_ptr);
     free(dJij_ptr);
+    free(phi_ij_ptr);
+    free(dphi_ij_ptr);
+    free(ddphi_ij_ptr);
+    free(dddphi_ij_ptr);
     #endif
 
     #if defined SDHL || defined SLDHL

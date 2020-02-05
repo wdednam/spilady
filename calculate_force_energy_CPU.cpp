@@ -34,14 +34,17 @@ void inner_loop(atom_struct *atom_ptr){
 
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL || defined SLDNC
     double si_sq = vec_sq(atom_ptr->s);
+    double C1 = 0.2;
+    double C2 = 0.1;
+       
     #endif
-
+    
     struct atom_struct *work_ptr;
 
     struct cell_struct *ccell_ptr;
     struct cell_struct *wcell_ptr;
 
-    ccell_ptr = first_cell_ptr + atom_ptr->new_cell_index;
+    ccell_ptr = first_cell_ptr + atom_ptr->new_cell_index;               
 
     for (int i = 0; i <= 13; ++i){
         if (i == 13)
@@ -50,15 +53,24 @@ void inner_loop(atom_struct *atom_ptr){
             wcell_ptr = first_cell_ptr + (ccell_ptr->neigh_cell[i]);
 
         work_ptr = wcell_ptr->head_ptr;
+        
+        #if defined SLDH || defined SLDHL                                  
+        vector dphi_rij = vec_zero();                                         
+        vector siT_dot_Li = vec_zero();
+        #endif
+        
+        
         while (work_ptr != NULL){
 
             if (work_ptr == atom_ptr && i == 13) break;
 
             vector rij = vec_sub(atom_ptr->r, work_ptr->r);
+            
+            vector sij = vec_sub(atom_ptr->s, work_ptr->s);
 
             find_image(rij);
 
-            double rsq  = vec_sq(rij);
+            double rsq  = vec_sq(rij);                           
 
             #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
             double pair_enr = 0e0;
@@ -72,7 +84,11 @@ void inner_loop(atom_struct *atom_ptr){
             #if defined SDH || defined SDHL || defined SLDH || defined SLDHL || defined SLDNC
             double sj_sq = vec_sq(work_ptr->s);
             #endif
-
+            
+            #if defined SLDH || defined SLDHL                       
+            vector dudr_spin_aniso = vec_zero();
+            #endif                                                              
+                       
             if (rsq < rcut_max_sq && atom_ptr != work_ptr){
 
                 double rij0 = sqrt(rsq);
@@ -123,7 +139,7 @@ void inner_loop(atom_struct *atom_ptr){
                     double si_times_sj = sqrt(si_sq*sj_sq); //|Si|.|Sj|
 
                     #if defined SLDH || defined SLDHL
-                    dudr_spin = -dJij(rij0)*(si_dot_sj - si_times_sj); // -dJdr_ij(Si dot Sj  - |Si||Sj|)
+                    dudr_spin = -dJij(rij0)*(si_dot_sj - si_times_sj); // -dJdr_ij(Si dot Sj  - |Si||Sj|);
                     #endif
 
                     double Jij_half = Jij(rij0)/2e0;
@@ -139,14 +155,56 @@ void inner_loop(atom_struct *atom_ptr){
                     #pragma omp atomic
                     work_ptr->me  += J_dot;
                 }
+                #endif
+            
                 #if defined SLDH || defined SLDHL
-                dudr += dudr_spin;
-                #endif
-                #endif
+                if (rij0 < rcut_phi && atom_ptr != work_ptr){
+	                
+	                double si_dot_rij = vec_dot(atom_ptr->s,rij); 
+	                double sj_dot_rij = vec_dot(work_ptr->s,rij); 
+	                                                              
+	                double sij_dot_rij = vec_dot(sij,rij);        
+	                                                   
+                    double d_ij = (dphi_ij(rij0)/rij0);
+                    double dd_ij = (ddphi_ij(rij0) - d_ij)/rsq;
+                    
+                    // First anisotropy correction
+                    dphi_rij = vec_add(dphi_rij,vec_times(d_ij,rij));
+                    
+                    vector sij_dot_dKi = vec_add(vec_times(d_ij,sij),vec_times(dd_ij*sij_dot_rij,rij));    
+                           
+                    // Second anisotropy correction - energy contribution
+                                        
+                    vector siT_dot_dLi = vec_add(vec_times(d_ij,atom_ptr->s),vec_times(dd_ij*si_dot_rij,rij));
+                                                                        
+                    siT_dot_Li = vec_add(siT_dot_Li,siT_dot_dLi);              
+                    
+                    // Second anisotropy correction - force contribution
+                    
+                    double ddd_ij = (dddphi_ij(rij0) - 3e0*ddphi_ij(rij0)/rij0 + 3e0*d_ij/rij0)/pow(rij0,3);
+                    
+                    vector siT_dot_dLi_dot_si_I = vec_times(dd_ij*(si_sq + sj_sq),rij);
+                    
+                    vector siT_dot_dLi_dot_si_II = vec_times(ddd_ij*(pow(si_dot_rij,2)+pow(sj_dot_rij,2)),rij);
+                    
+                    vector siT_dot_dLi_dot_si_III = vec_times(2e0*dd_ij,vec_add(vec_times(si_dot_rij,atom_ptr->s),vec_times(sj_dot_rij,work_ptr->s)));
+                    
+                    vector siT_dot_dLi_dot_si = vec_add(siT_dot_dLi_dot_si_I,vec_add(siT_dot_dLi_dot_si_II,siT_dot_dLi_dot_si_III));
+                    
+                    dudr_spin_aniso = vec_add(dudr_spin_aniso,vec_add(vec_times(C1,sij_dot_dKi),vec_times(C2,siT_dot_dLi_dot_si)));
+                                                                         
+                }
+                #endif                              
+                                
+                #if defined SLDH || defined SLDHL
+                dudr += dudr_spin;               
+                #endif                           
 
                 #if defined MD || defined SLDH || defined SLDHL || defined SLDNC
                 double force = -dudr/rij0;
-                vector fij = vec_times(force, rij);
+                
+                vector fij = vec_add(vec_times(force, rij),dudr_spin_aniso);
+                //vector fij = vec_times(force, rij);
                 #pragma omp atomic
                 atom_ptr->f.x += fij.x;
                 #pragma omp atomic
@@ -186,16 +244,28 @@ void inner_loop(atom_struct *atom_ptr){
                 #pragma omp atomic
                 work_ptr->stress31 += fij.z*rij.x;
 
-                atom_ptr->vir += -force*rsq;
+                atom_ptr->vir += -force*rsq - vec_length(dudr_spin_aniso)*rsq;
                 #endif
             }
             work_ptr = work_ptr->next_atom_ptr;
         }
+        
+        //First Anisotropy energy contribution                      
+        double Ki_dot_si = -vec_dot(atom_ptr->s,dphi_rij);          
+        //Second Anisotropy energy contribution                     
+        double siT_dot_Li_dot_si = -vec_dot(siT_dot_Li,atom_ptr->s);
+                                                                    
+        #pragma omp atomic                                          
+        atom_ptr->me  += C1*Ki_dot_si;                      
+        #pragma omp atomic
+        atom_ptr->me  += C2*siT_dot_Li_dot_si;
+        
     }
-
+        
     #if defined MD || defined SLDH || defined SLDHL
     atom_ptr->pe +=bigf(atom_ptr->rho);
     #endif
+
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
         #ifdef extfield
         atom_ptr->me -= vec_dot(atom_ptr->s, atom_ptr->Hext);
@@ -214,8 +284,6 @@ void inner_loop(atom_struct *atom_ptr){
         #endif
     #endif
 }
-
-
 
 void calculate_force_energy_CPU(){
 

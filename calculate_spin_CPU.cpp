@@ -29,6 +29,8 @@
 #if (defined SDH || defined SDHL || defined SLDH || defined SLDHL || defined SLDNC) && defined CPU
 
 #include "spilady.h"
+	
+vector spin_rotation(vector Heff, vector s, double dt);
 
 void calculate_spin(atom_struct *atom_ptr, double dt){
 
@@ -41,15 +43,55 @@ void calculate_spin(atom_struct *atom_ptr, double dt){
     atom_ptr->Heff_L = vec_zero();
     #endif
 
-    inner_spin(atom_ptr); //calculate the effective field of current atom
-
     #ifndef spinlang
     //exact solution; no thermostat; PRL 86, 898 (2001) I. P. Omelyan
-    atom_ptr->s = spin_rotation(atom_ptr->Heff_H, atom_ptr->s, dt);
+    
+    #if (defined extvelocity || defined extbrat)
+    if (atom_ptr->fext.x != 0.0 || atom_ptr->fext.y != 0.0 || atom_ptr->fext.z != 0.0){    
+	    atom_ptr->Heff_H = vec_zero();
+	    atom_ptr->s = spin_rotation(atom_ptr->Heff_H, atom_ptr->s, dt);                                                                                                                    
+    }
+    else {
+        atom_ptr->s_curr = atom_ptr->s;
+        atom_ptr->s_next = atom_ptr->s_curr;
+	    for (int k = 0; k < 4; ++k) {
+		    inner_spin(atom_ptr);
+		    atom_ptr->s_next = spin_rotation(atom_ptr->Heff_H, atom_ptr->s_curr, dt);
+		    atom_ptr->Heff_H = vec_zero();
+		}
+        atom_ptr->s = atom_ptr->s_next;                           
+	}
+	#endif
+	
+	#if not (defined extvelocity || defined extbrat)
+    atom_ptr->s_curr = atom_ptr->s;
+    atom_ptr->s_next = atom_ptr->s_curr;     
+	for (int k = 0; k < 4; ++k) {
+		inner_spin(atom_ptr);
+		atom_ptr->s_next = spin_rotation(atom_ptr->Heff_H, atom_ptr->s_curr, dt);
+		atom_ptr->Heff_H = vec_zero();
+	}
+	atom_ptr->s = atom_ptr->s_next;
+	#endif
+    
+    
     #endif /*no spin langevin*/
 
-    #ifdef spinlang
-
+      #ifdef spinlang
+      
+      #if (defined extvelocity || defined extbrat)                                           
+      if (atom_ptr->fext.x != 0.0 || atom_ptr->fext.y != 0.0 || atom_ptr->fext.z != 0.0){    
+	      atom_ptr->Heff_H = vec_zero();                                                           
+      }                                                                                      
+      else {                                                                                 
+          inner_spin(atom_ptr); //calculate the effective field of current atom                    
+      }	                                                                                     
+      #endif                                                                                 
+                                                                                             
+      #if not (defined extvelocity || defined extbrat)                                       
+      inner_spin(atom_ptr); //calculate the effective field of current atom                  
+      #endif                                                                                         
+      
       double dt_half = dt/2e0;
 
       #if defined SDH || defined SLDH
@@ -59,8 +101,9 @@ void calculate_spin(atom_struct *atom_ptr, double dt){
       vector s_temp = atom_ptr->s;
 
       //1st part
+      
       vector s_cross_Heff = vec_cross(s_temp, atom_ptr->Heff_H);
-      double Heff_H0 = vec_length(atom_ptr->Heff_H);
+      double Heff_H0 = vec_length(atom_ptr->Heff_H);            
 
       double cos_a  = cos(Heff_H0*(dt_half/hbar));
       double sin_a  = sin(Heff_H0*(dt_half/hbar));
@@ -92,12 +135,13 @@ void calculate_spin(atom_struct *atom_ptr, double dt){
       atom_ptr->s = spin_rotation(dh, atom_ptr->s, dt);
 
       //3rd part
+      
       s_temp = atom_ptr->s;
       s_cross_Heff = vec_cross(s_temp, atom_ptr->Heff_H);
 
       normalized_S_dot_H = 0e0;
       if (atom_ptr->s0 > 0e0 && Heff_H0 > 0e0)
-          normalized_S_dot_H = vec_dot(s_temp, atom_ptr->Heff_H)/atom_ptr->s0/Heff_H0;
+          normalized_S_dot_H = vec_dot(s_temp,atom_ptr->Heff_H)/atom_ptr->s0/Heff_H0;
 
       denominator = (1e0 + exp_2b + normalized_S_dot_H*(1e0 - exp_2b))*Heff_H0;
       factor      = (1e0 - exp_2b + normalized_S_dot_H*(1e0 + exp_2b -2e0*cos_a*exp_b))*atom_ptr->s0;
@@ -111,6 +155,7 @@ void calculate_spin(atom_struct *atom_ptr, double dt){
       #if defined SDHL || defined SLDHL
       // In 5 parts.
       //part 1
+
       atom_ptr->s = spin_rotation(atom_ptr->Heff_H, atom_ptr->s, dt_half);
 
       //part 2
@@ -206,7 +251,9 @@ void inner_spin(atom_struct *atom_ptr){
     struct cell_struct *wcell_ptr;
 
     ccell_ptr = first_cell_ptr + atom_ptr->new_cell_index;
-
+    
+    vector sum_s = vec_add(atom_ptr->s_curr,atom_ptr->s_next);
+    
     for (int i = 0; i <= 26; ++i){
         if (i == 26)
             wcell_ptr = ccell_ptr;
@@ -228,10 +275,79 @@ void inner_spin(atom_struct *atom_ptr){
                 double rij0 = sqrt(rsq);
                 double Jij_rij = Jij(rij0);
                 atom_ptr->Heff_H = vec_add(atom_ptr->Heff_H, vec_times(Jij_rij, work_ptr->s));
+                
             }
+
+            // Tally the contribution to the first anisotropy correction from atom i's neighbors
+            if (rsq <= rcut_phi_sq && atom_ptr != work_ptr){
+	            
+	            double rij0 = sqrt(rsq);
+	            double C1 = 0.2;
+	            double C2 = 0.1;
+
+                double d_ij = (dphi_ij(rij0)/rij0);        	            
+                	            	            
+	            //First anistropy correction
+
+                atom_ptr->Heff_H = vec_add(atom_ptr->Heff_H, vec_times(C1*d_ij,rij));
+                
+                //Subtract second anisotropy contribution
+                
+                double dd_ij = (ddphi_ij(rij0) - d_ij)/rsq;
+	            
+	            vector dphi_rij_sum_s = vec_times(d_ij,sum_s);
+	            
+	            double sum_s_dot_rij = vec_dot(sum_s,rij);
+	            
+	            vector ddphi_rij_sum_s = vec_times(dd_ij*sum_s_dot_rij,rij); 
+	            
+	            atom_ptr->Heff_H = vec_add(atom_ptr->Heff_H, vec_times(C2,vec_add(dphi_rij_sum_s,ddphi_rij_sum_s)));                 
+                      
+        	}    
+        	
             work_ptr = work_ptr->next_atom_ptr;
         }
     }
+}
+
+vector spin_rotation(vector Heff, vector s, double dt){
+
+    vector omega  = vec_divide(Heff, -hbar);
+    double omega0 = vec_length(omega);
+
+    if (omega0 > 0e0){
+        omega = vec_divide(omega, omega0);
+    } else {
+        omega = vec_zero();
+    }
+
+    double omega_12 = omega.x*omega.y;
+    double omega_23 = omega.y*omega.z;
+    double omega_13 = omega.x*omega.z;
+
+    double omega1_sq = omega.x*omega.x;
+    double omega2_sq = omega.y*omega.y;
+    double omega3_sq = omega.z*omega.z;
+
+    double A = sin(omega0*dt);
+    double B = 1e0 - cos(omega0*dt);
+
+    vector s_temp;
+    s_temp.x = s.x
+             + (s.x*B*(-omega2_sq - omega3_sq)
+             +  s.y*(B*omega_12 - A*omega.z)
+             +  s.z*(A*omega.y + B*omega_13));
+    s_temp.y = s.y
+             + (s.y*B*(-omega1_sq - omega3_sq)
+             +  s.z*(B*omega_23 - A*omega.x)
+             +  s.x*(A*omega.z + B*omega_12));
+    s_temp.z = s.z
+             + (s.z*B*(-omega1_sq - omega2_sq)
+             +  s.x*(B*omega_13 - A*omega.y)
+             +  s.y*(A*omega.x + B*omega_23));
+
+    return s_temp;
+       
 }
 
 #ifdef SLDHL
@@ -267,6 +383,7 @@ void inner_sum_Jij_sj(atom_struct *atom_ptr){
                 double sj = vec_length(work_ptr->s);
                 atom_ptr->sum_Jij_sj += Jij_rij*sj;
             }
+      
             work_ptr = work_ptr->next_atom_ptr;
 
         }

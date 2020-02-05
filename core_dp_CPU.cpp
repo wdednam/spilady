@@ -69,8 +69,20 @@ void core_dp_CPU(double dt){
           #ifdef extforce
           atom_ptr->f = vec_add(atom_ptr->f, atom_ptr->fext);
           #endif
+          
+          #if (defined extvelocity || defined extbrat)
+          if (atom_ptr->fext.x != 0.0 || atom_ptr->fext.y != 0.0 || atom_ptr->fext.z != 0.0){
+	          atom_ptr->p = vec_zero();
+			  atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt,atom_ptr->fext));
+          }
+          else {
+	          atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt,atom_ptr->f));
+          }	        
+          #endif          
 
+          #if not (defined extvelocity || defined extbrat)
           atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt,atom_ptr->f));
+          #endif
       }
     #endif
 
@@ -130,6 +142,17 @@ void core_dp_A(double dt){
                 #ifdef extforce
                 atom_ptr->f = vec_add(atom_ptr->f, atom_ptr->fext);
                 #endif
+                
+                #if (defined extvelocity || defined extbrat)
+                if (atom_ptr->fext.x != 0.0 || atom_ptr->fext.y != 0.0 || atom_ptr->fext.z != 0.0){
+	                atom_ptr->p = vec_zero();
+	                atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt,atom_ptr->fext));
+                }
+                else {
+	                atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt,atom_ptr->f));
+            	}    
+                #endif
+          
                 //generating random numbers
                 int thread_index = omp_get_thread_num();
                 vector fluct_force;
@@ -155,8 +178,17 @@ void core_dp_A(double dt){
                   fluct_force.z = normal_rand(thread_index);
                 #endif
 
+                #if (defined extvelocity || defined extbrat)
+                if (atom_ptr->fext.x == 0.0 && atom_ptr->fext.y == 0.0 && atom_ptr->fext.z == 0.0){
+                    fluct_force = vec_times(fluct_force_length, fluct_force);                            
+                    atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt, vec_add(atom_ptr->f, fluct_force)));
+                }
+                #endif
+                
+                #if not (defined extvelocity || defined extbrat)
                 fluct_force = vec_times(fluct_force_length, fluct_force);
                 atom_ptr->p = vec_add(atom_ptr->p, vec_times(dt, vec_add(atom_ptr->f, fluct_force)));
+                #endif
 
         #ifdef localcolmot
                 cell_ptr->ave_fluct_force = vec_add(cell_ptr->ave_fluct_force, fluct_force);
@@ -178,8 +210,16 @@ void core_dp_A(double dt){
 
         struct cell_struct *cell_ptr;
         cell_ptr = first_cell_ptr + atom_ptr->new_cell_index;
-
+        
+        #if (defined extvelocity || defined extbrat)
+        if (atom_ptr->fext.x == 0.0 && atom_ptr->fext.y == 0.0 && atom_ptr->fext.z == 0.0){
+            atom_ptr->p = vec_sub(atom_ptr->p, vec_times(dt, cell_ptr->ave_fluct_force));
+        }
+        #endif
+        
+        #if not (defined extvelocity || defined extbrat)
         atom_ptr->p = vec_sub(atom_ptr->p, vec_times(dt, cell_ptr->ave_fluct_force));
+        #endif
     }
 
     #endif
@@ -201,8 +241,16 @@ void core_dp_B(double dt){
         #else
         double exp_dt = exp(-gamma_L/atmass*dt);
         #endif
-
-        atom_ptr->p = vec_times(exp_dt, atom_ptr->p);
+        
+        #if (defined extvelocity || defined extbrat)                                                                 
+        if (atom_ptr->fext.x == 0.0 && atom_ptr->fext.y == 0.0 && atom_ptr->fext.z == 0.0){
+            atom_ptr->p = vec_times(exp_dt, atom_ptr->p);  
+        }                                                                                  
+        #endif                                                                             
+                                                                                           
+        #if not (defined extvelocity || defined extbrat)
+        atom_ptr->p = vec_times(exp_dt, atom_ptr->p);      
+        #endif                                                                             
     }
 }
 
@@ -255,7 +303,16 @@ void core_dp_C2(double dt){
                 }
                 double factor = gamma_L/atmass*dt/(first_cell_ptr + atom_ptr->new_cell_index)->no_of_atoms_in_cell;
 
-                atom_ptr->p = vec_add(atom_ptr->p, vec_times(factor, vec_sub(sum_p, atom_ptr->p)));
+                #if (defined extvelocity || defined extbrat)
+                if (atom_ptr->fext.x == 0.0 && atom_ptr->fext.y == 0.0 && atom_ptr->fext.z == 0.0){
+                    atom_ptr->p = vec_add(atom_ptr->p, vec_times(factor, vec_sub(sum_p, atom_ptr->p)));                                  
+                }                                                                                  
+                #endif                                                                             
+                                                                                                   
+                #if not (defined extvelocity || defined extbrat)
+                atom_ptr->p = vec_add(atom_ptr->p, vec_times(factor, vec_sub(sum_p, atom_ptr->p)));                                      
+                #endif                                                                             
+                
                 atom_ptr = atom_ptr->prev_atom_ptr;
             }
         }

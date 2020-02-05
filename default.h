@@ -47,20 +47,20 @@ EXTERN int no_of_threads INIT(32); //set the number of threads in a block
 #endif
 
 #ifdef OMP
-EXTERN int OMP_threads INIT(2); //number of threads for running openmp
+EXTERN int OMP_threads INIT(4); //number of threads for running openmp
 #endif
 
 EXTERN char* out_body; //the body of output file names
 
 #ifdef runstep  //either run for a total number of steps or a total time.
-EXTERN int no_of_production_steps INIT(1000);
+EXTERN int no_of_production_steps INIT(500000);
 #else
 EXTERN double total_production_time INIT(1e-13); // in second
 #endif
 
 EXTERN double step INIT(1e-15); // time-step ; in second
 
-EXTERN int interval_of_print_out INIT(1); // print out general information per interval
+EXTERN int interval_of_print_out INIT(100); // print out general information per interval
 
 EXTERN int interval_of_config_out INIT(1000); //output the full configuration file per interval during production steps
 
@@ -93,7 +93,7 @@ EXTERN double start_time INIT(0e0); // To initialize total_time = start_time
 #endif
 
 #ifdef bcc100
-EXTERN double a_lattice INIT(2.83e0); //a lattice constant in Angstrom, Fe
+EXTERN double a_lattice INIT(2.8655e0); //a lattice constant in Angstrom, Fe
 EXTERN int no_of_unit_cell_x INIT(10); //no. of unit cell in a x side
 EXTERN int no_of_unit_cell_y INIT(10); //no. of unit cell in a y side
 EXTERN int no_of_unit_cell_z INIT(10); //no. of unit cell in a z side
@@ -104,7 +104,7 @@ EXTERN double unit_cell_edge_z INIT(a_lattice); //z dimension of a single cell
 #endif
 
 #ifdef bcc111
-EXTERN double a_lattice INIT(2.83e0); //a lattice constant in Angstrom, Fe
+EXTERN double a_lattice INIT(2.8655e0); //a lattice constant in Angstrom, Fe
 EXTERN int no_of_unit_cell_x INIT(6); //no. of unit cell in a x side
 EXTERN int no_of_unit_cell_y INIT(4); //no. of unit cell in a y side
 EXTERN int no_of_unit_cell_z INIT(7); //no. of unit cell in a z side
@@ -112,6 +112,17 @@ EXTERN int unit_cell_no_of_atom INIT(12); //no. of atom in an unit call
 EXTERN double unit_cell_edge_x INIT(a_lattice*sqrt(3e0)); //x dimension of a single cell
 EXTERN double unit_cell_edge_y INIT(a_lattice*sqrt(6e0)); //y dimension of a single cell
 EXTERN double unit_cell_edge_z INIT(a_lattice*sqrt(2e0)); //z dimension of a single cell
+#endif
+
+#ifdef bcc111_z
+EXTERN double a_lattice INIT(2.8655e0); //a lattice constant in Angstrom, Fe
+EXTERN int no_of_unit_cell_x INIT(4); //no. of unit cell in a x side
+EXTERN int no_of_unit_cell_y INIT(7); //no. of unit cell in a y side
+EXTERN int no_of_unit_cell_z INIT(6); //no. of unit cell in a z side
+EXTERN int unit_cell_no_of_atom INIT(12); //no. of atom in an unit call
+EXTERN double unit_cell_edge_x INIT(a_lattice*sqrt(6e0)); //x dimension of a single cell
+EXTERN double unit_cell_edge_y INIT(a_lattice*sqrt(2e0)); //y dimension of a single cell
+EXTERN double unit_cell_edge_z INIT(a_lattice*sqrt(3e0)); //z dimension of a single cell
 #endif
 
 #ifdef fcc100
@@ -137,7 +148,7 @@ EXTERN double unit_cell_edge_y INIT(a_lattice*sqrt(3e0)/2e0); //y dimension of a
 EXTERN double unit_cell_edge_z INIT(c_lattice); //z dimension of a single cell
 #endif
 
-#if defined bcc100 || defined bcc111 || defined fcc100 || defined hcp0001
+#if defined bcc100 || defined bcc111 || defined bcc111_z || defined fcc100 || defined hcp0001
 EXTERN char element[2];
 #endif
 
@@ -200,6 +211,11 @@ EXTERN double rcut_pot_sq;
 #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
 EXTERN double rcut_mag INIT(3.75e0); // the cutoff for Jij; in Angstrom
 EXTERN double rcut_mag_sq;
+#endif
+
+#if defined SDH || defined SDHL || defined SLDH || defined SLDHL
+EXTERN double rcut_phi INIT(3.5e0); // the cutoff for grad_phi_ij; in Angstrom
+EXTERN double rcut_phi_sq;
 #endif
 
 EXTERN double rcut_max INIT(4.1e0); //input the max. of rcut_mag and rcut_pot, please put it by hand here.

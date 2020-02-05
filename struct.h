@@ -52,6 +52,14 @@ struct atom_struct {
       #ifdef extforce
       vector fext; // external force
       #endif
+      
+      #ifdef extvelocity
+      vector fext; // external velocity
+      #endif
+
+      #ifdef extbrat
+      vector fext; // external Bratkovsky
+      #endif            
 
       double vir; //the virial of individual atom
 
@@ -70,8 +78,13 @@ struct atom_struct {
 
     #if defined SDH || defined SDHL || defined SLDH || defined SLDHL || defined SLDNCa
       vector s; //atomic spin vector
+      vector s_curr; //atomic spin vector at time t
+      vector s_next; //atomic spin vector at time t + dt
+      
       double s0; // magnitude of spin vector
       vector Heff_H; //the Heisenberg part of the effective field
+      vector s_cross_Heff; // The vector in the numerator in the equation for the spin temperature when H_eff is non-linear in Si
+      double Ts_dn; // The denominator in the equation for the spin temperature when H_eff is non-linear in Si
 
       vector m; //magnetic moment vector, use magnetic moment as input, instead of atomic spin
       double m0; //magnitdue of magnetic moment vector
@@ -90,7 +103,7 @@ struct atom_struct {
       #endif
 
       #if defined SDH || defined SDHL || defined SLDH || defined SLDHL
-      double me;  //magneitc energy (should be in negative sign)
+      double me;  //magnetic energy (should be in negative sign)
       double me0; //minus of magnetic energy at ground state (but should be in positive sign)
       #endif
     #endif
@@ -238,12 +251,14 @@ struct varGPU {
     double rcut_pot;
     double rcut_mag;
     double rcut_max;
+    double rcut_phi;
     double rcut_vol;
     double min_length_link_cell;
 
     double rcut_pot_sq;
     double rcut_mag_sq;
     double rcut_max_sq;
+    double rcut_phi_sq;
 
     vector Hext;
 
